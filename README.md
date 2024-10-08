@@ -7,4 +7,4 @@ For More Details follow- 'https://arxiv.org/pdf/2207.04984'
 
 Run theshold_main.py to determine the threshold in theta,p domain
 
-One set of sample parameters has been shown theshold_main.py.
+One set of sample parameters has been shown in theshold_main.py.
