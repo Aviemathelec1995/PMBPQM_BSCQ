@@ -5,7 +5,7 @@ for Binary Symmetric Classical Quantum channels.
 
 Required packages are numpy,scipy,numba,matplotlib and tqdm.
 
-For More Details follow- 'https://arxiv.org/pdf/2207.04984'
+For more details about this research follow- 'https://arxiv.org/pdf/2207.04984'
 
 Run `python threshold_main.py` to determine the threshold in theta,p domain
 
