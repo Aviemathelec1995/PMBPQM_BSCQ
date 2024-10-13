@@ -3,6 +3,8 @@
 The repository contains code to find the threshold for regular LDPC or LDGM code in the delta, gamma (or theta, p) parameter domain
 for Binary Symmetric Classical Quantum channels.
 
+Required packages are numpy,scipy,numba,matplotlib and tqdm
+
 For More Details follow- 'https://arxiv.org/pdf/2207.04984'
 
 Run `python threshold_main.py` to determine the threshold in theta,p domain
