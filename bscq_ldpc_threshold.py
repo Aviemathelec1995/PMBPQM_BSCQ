@@ -6,7 +6,9 @@ import copy
 import numba
 from numba import int64, float64, jit, njit, vectorize
 import matplotlib.pyplot as pl
-
+from tqdm import tqdm
+import argparse as ap
+import time
 
 def pauli(x):
   '''
@@ -492,3 +494,85 @@ def helstrom_channel_density(t,p,no_samples,dv,dc,depth,code='LDPC'):
     h[i]=1-np.average(helstrom_success_vec(O[i+1]))
 
   return h
+
+def calculate_max_iterations(t_left, t_right, tol):
+  L = t_right - t_left  # Initial length of the interval
+  return int(np.ceil(np.log2(L / tol)))
+
+# Binary search to find t for a given p
+def binary_search_t(p,t_min,no_samples,dv,dc,depth,tol=0.02,code='LDPC'):
+    t_left, t_right = t_min, np.pi/2
+    max_iter = calculate_max_iterations(t_left, t_right, tol)  # Determine max iterations
+    iteration = 0
+
+    while t_right - t_left > tol and iteration < max_iter:
+        t_mid = (t_left + t_right) / 2
+        h=helstrom_channel_density(t_mid,p,no_samples,dv,dc,depth)
+        #print(t_mid)
+        if min(h) > 0:
+            t_left = t_mid  # Adjust the search range
+
+        else:
+            t_right = t_mid
+        iteration += 1
+
+    return (t_left + t_right) / 2
+
+# Binary search to find p for a given t
+def binary_search_p(t,p_max,no_samples,dv,dc,depth,tol=0.005,code='LDPC'):
+    p_left, p_right = 0, p_max
+    max_iter = calculate_max_iterations(p_left, p_right, tol)  # Determine max iterations
+    iteration = 0
+
+    while p_right - p_left > tol and iteration < max_iter:
+        p_mid = (p_left + p_right) / 2
+        h=helstrom_channel_density(t,p_mid,no_samples,dv,dc,depth)
+        #print(p_mid)
+        if min(h) > 0:
+            p_right = p_mid  # Adjust the search range
+
+        else:
+            p_left = p_mid
+        iteration += 1
+
+    return (p_left + p_right) / 2
+
+def gen_threshold(no_samples,dv,dc,depth,no_points,tol,code='LDPC'):
+     t0=binary_search_t(0,0,no_samples,dv,dc,depth,tol)
+     print('(\u03B8\u2080,0)=',(t0,0))
+     p0=binary_search_p(np.pi/2,0.5,no_samples,dv,dc,depth,tol)
+     print('(0,p\u2080)=',(np.pi/2,p0))
+     p_min=p0/(no_points-1)
+     p_max=p0-p0/(no_points-1)
+     p_val=np.linspace(p_min,p_max,no_points-2)
+     t_val=[t0]
+     GREEN = '\033[92m'
+     RESET = '\033[0m'
+     for i in tqdm(range(len(p_val)),desc="searching for thresholds (\u03B8\u2096,p\u2096)",bar_format=f'{GREEN}{{l_bar}}{{bar}}{{r_bar}}{RESET}'):
+       time.sleep(0.05)
+       tk=binary_search_t(p_val[i],t_val[i],no_samples,dv,dc,depth,tol)
+       print(f'{tk,p_val[i]}')
+       t_val.append(tk)
+     p_val=np.concatenate([[0],p_val])
+     p_val=np.concatenate([p_val,[p0]])
+     t_val.append(np.pi/2)
+     return p_val,t_val
+
+def main():
+  print(f'Thresholds for ({dv},{dc}) regular LDPC codes over BSCQ channels')
+  p,t=gen_threshold(no_samples,dv,dc,depth,no_points,tol)
+  print('\u03B8 values',t)
+  print('corresponding p values',p)
+if __name__== "__main__":
+  parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
+  parser.add_argument('--verbose', '-v', help='Display text output', action="store_true")
+  parser.add_argument('-n', dest='no_samples', type=float, default=1000, help='Number of samples for DE')
+  parser.add_argument('-dv', dest='dv', type=float, default=3, help='Bitnode degree')
+  parser.add_argument('-dc', dest='dc', type=int, default=4, help='Checknode degree')
+  parser.add_argument('-M', dest='depth', type=int, default=60, help='Depth of the tree')
+  parser.add_argument('-s', dest='no_points', type=int, default=6, help='Number of points for the plot')
+  parser.add_argument('-e', dest='tol', type=int, default=0.005, help='Error tolerance for threshold values')
+  # parse arguments
+  args = parser.parse_args()
+  locals().update(vars(args))
+  main()
