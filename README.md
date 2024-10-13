@@ -11,4 +11,6 @@ For example to run (3,6) regular LPDC code with 1000 samples for Density evoluti
 use `python threshold_main.py -ns 1000 -dv 3 -dc 6 -M 100 -np 10 -err 0.001`.
 
 See the following output log below-
+
+
 ![Screenshot](./images/output_log.png)
