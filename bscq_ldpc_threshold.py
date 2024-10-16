@@ -567,7 +567,7 @@ if __name__== "__main__":
   parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
   parser.add_argument('--verbose', '-v', help='Display text output', action="store_true")
   parser.add_argument('-n', dest='no_samples', type=int, default=1000, help='Number of samples for DE')
-  parser.add_argument('-dv', dest='dv', type=float, default=3, help='Bitnode degree')
+  parser.add_argument('-dv', dest='dv', type=int, default=3, help='Bitnode degree')
   parser.add_argument('-dc', dest='dc', type=int, default=4, help='Checknode degree')
   parser.add_argument('-M', dest='depth', type=int, default=60, help='Depth of the tree')
   parser.add_argument('-s', dest='no_points', type=int, default=6, help='Number of points for the plot')
