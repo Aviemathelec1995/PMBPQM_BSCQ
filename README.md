@@ -16,3 +16,5 @@ See the following output log below-
 
 
 ![Screenshot](./images/output_log.png)
+
+The unicode characters have been used to print the results. If the unicode characters are not compatible with your system, change \u03B8 with theta, \u03C0 with pi to print
