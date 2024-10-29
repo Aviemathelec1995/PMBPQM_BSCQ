@@ -4,7 +4,7 @@ from scipy.linalg import sqrtm
 from numpy.linalg import matrix_rank
 import copy
 import numba
-from numba import int64, float64, jit, njit, vectorize
+from numba import int64, float64, jit, njit, vectorize, boolean
 import matplotlib.pyplot as pl
 from tqdm import tqdm
 import argparse as ap
@@ -364,68 +364,137 @@ def checknode_vec_jit(d1:float64[:],d2:float64[:],g1:float64[:],g2:float64[:],pr
   return d,g
 
 
+# @njit
+# def bitnode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
+#   '''
+#    Code to sample post measurement state from bitnode operation from delta, gamma parameters
+#    for a set of  BSCQ channels with given bitnode degree associated with LDPC or LDGM code
+#          Arguments:
+#                   d(float64[:]): parameter delta for a set of BSCQ channels
+                  
+#                   g(float64[:]) : parameter gamma for a set of BSCQ channels
+                  
+#                   k(int64): number of time bitnode to be applied on the channels
+                  
+#                   pr_vec(binary [:]): output specific post measurement state
+#                   perm(int[:]): permuation on second set to combine bitnode operation
+#                                if none, we apply random permutation
+
+
+#           Returns:
+#                   d(float64[:]): delta parameters for combined channels
+#                   g(float64[:])  gamma parameters for combined channels
+                  
+#   '''
+#   if k==1:
+#     return d,g
+#   else:
+#     d1,g1=bitnode_vec_jit(d,d,g,g,pr_vec,perm)
+#     if k>2:
+#       for i in range(k-2):
+#         d1,g1=bitnode_vec_jit(d,d1,g,g1,pr_vec,perm)
+#     return d1,g1
+  
 @njit
 def bitnode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
-  '''
-   Code to sample post measurement state from bitnode operation from delta, gamma parameters
-   for a set of  BSCQ channels with given bitnode degree associated with LDPC or LDGM code
-         Arguments:
-                  d(float64[:]): parameter delta for a set of BSCQ channels
+    '''
+    Code to sample post-measurement state from bitnode operation with delta, gamma parameters
+    for a set of BSCQ channels associated with an LDPC or LDGM code, using exponentiation by squaring.
+    
+    Arguments:
+        d (float64[:]): Delta parameter for a set of BSCQ channels
+        g (float64[:]): Gamma parameter for a set of BSCQ channels
+        k (int64): Number of times bitnode to be applied to the channels
+        pr_vec (binary[:], optional): Output-specific post-measurement state
+        perm (int[:], optional): Permutation on the second set to combine bitnode operation; 
+                                  if None, a random permutation is applied
+
+    Returns:
+        (float64[:], float64[:]): Updated delta and gamma parameters for combined channels
+    '''
+    # Initialize the result as the identity in terms of the bitnode operation
+    d_result, g_result = d.copy(), g.copy()
+    
+    # Base matrices (starting with initial d and g)
+    d_base, g_base = d.copy(), g.copy()
+    
+    while k > 0:
+        if k % 2 == 1:  # If k is odd, multiply the result by the current base
+            d_result, g_result = bitnode_vec_jit(d_result, d_base, g_result, g_base, pr_vec, perm)
+        
+        # Square the base
+        d_base, g_base = bitnode_vec_jit(d_base, d_base, g_base, g_base, pr_vec, perm)
+        
+        # Halve k
+        k //= 2
+    
+    return d_result, g_result
+# @njit
+# def checknode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
+#   '''
+#    Code to sample post measurement state from checknode operation from delta, gamma parameters
+#    for a set of  BSCQ channels with given checknode degree associated with LDPC or LDGM code
+#          Arguments:
+#                   d(float64[:]): parameter delta for a set of BSCQ channels
                   
-                  g(float64[:]) : parameter gamma for a set of BSCQ channels
+#                   g(float64[:]) : parameter gamma for a set of BSCQ channels
                   
-                  k(int64): number of time bitnode to be applied on the channels
+#                   k(int64): number of time checknode to be applied on the channels
                   
-                  pr_vec(binary [:]): output specific post measurement state
-                  perm(int[:]): permuation on second set to combine bitnode operation
-                               if none, we apply random permutation
+#                   pr_vec(binary [:]): output specific post measurement state
+#                   perm(int[:]): permuation on second set to combine checknode operation
+#                                if none, we apply random permutation
 
 
-          Returns:
-                  d(float64[:]): delta parameters for combined channels
-                  g(float64[:])  gamma parameters for combined channels
+#           Returns:
+#                   d(float64[:]): delta parameters for combined channels
+#                   g(float64[:])  gamma parameters for combined channels
                   
-  '''
-  if k==1:
-    return d,g
-  else:
-    d1,g1=bitnode_vec_jit(d,d,g,g,pr_vec,perm)
-    if k>2:
-      for i in range(k-2):
-        d1,g1=bitnode_vec_jit(d,d1,g,g1,pr_vec,perm)
-    return d1,g1
+#   '''
+#   if k==1:
+#     return d,g
+#   else:
+#     d1,g1=checknode_vec_jit(d,d,g,g,pr_vec,perm)
+#     if k>2:
+#       for i in range(k-2):
+#         d1,g1=checknode_vec_jit(d,d1,g,g1,pr_vec,perm)
+#     return d1,g1
 
 
 @njit
 def checknode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
-  '''
-   Code to sample post measurement state from checknode operation from delta, gamma parameters
-   for a set of  BSCQ channels with given checknode degree associated with LDPC or LDGM code
-         Arguments:
-                  d(float64[:]): parameter delta for a set of BSCQ channels
-                  
-                  g(float64[:]) : parameter gamma for a set of BSCQ channels
-                  
-                  k(int64): number of time checknode to be applied on the channels
-                  
-                  pr_vec(binary [:]): output specific post measurement state
-                  perm(int[:]): permuation on second set to combine checknode operation
-                               if none, we apply random permutation
+    '''
+    Code to sample post-measurement state from checknode operation with delta, gamma parameters
+    for a set of BSCQ channels associated with an LDPC or LDGM code, using exponentiation by squaring.
+    
+    Arguments:
+        d (float64[:]): Delta parameter for a set of BSCQ channels
+        g (float64[:]): Gamma parameter for a set of BSCQ channels
+        k (int64): Number of times checknode to be applied to the channels
+        pr_vec (bool_[:], optional): Output-specific post-measurement state
+        perm (int64[:], optional): Permutation on the second set to combine checknode operation; 
+                                  if None, a random permutation is applied
 
-
-          Returns:
-                  d(float64[:]): delta parameters for combined channels
-                  g(float64[:])  gamma parameters for combined channels
-                  
-  '''
-  if k==1:
-    return d,g
-  else:
-    d1,g1=checknode_vec_jit(d,d,g,g,pr_vec,perm)
-    if k>2:
-      for i in range(k-2):
-        d1,g1=checknode_vec_jit(d,d1,g,g1,pr_vec,perm)
-    return d1,g1
+    Returns:
+        (float64[:], float64[:]): Updated delta and gamma parameters for combined channels
+    '''
+    # Convert empty arrays to None if not provided to handle optional arguments
+   
+    # Identity state for exponentiation by squaring
+    d_result, g_result = d.copy(), g.copy()
+    d_base, g_base = d.copy(), g.copy()
+    
+    while k > 0:
+        if k % 2 == 1:  # If k is odd, multiply the result by the current base
+            d_result, g_result = checknode_vec_jit(d_result, d_base, g_result, g_base, pr_vec, perm)
+        
+        # Square the base
+        d_base, g_base = checknode_vec_jit(d_base, d_base, g_base, g_base, pr_vec, perm)
+        
+        # Halve k
+        k //= 2
+    
+    return d_result, g_result
 
 @njit
 def channel_density_jit(d:float64[:],g:float64[:],dv:int64,dc:int64,n:int64,code='LDPC')->(float64[:,:,:]):
@@ -538,8 +607,12 @@ def binary_search_p(t,p_max,no_samples,dv,dc,depth,tol=0.005,code='LDPC'):
     return (p_left + p_right) / 2
 
 def gen_threshold(no_samples,dv,dc,depth,no_points,tol,code='LDPC'):
+     
+     start_time = time.time()
      t0=binary_search_t(0,0,no_samples,dv,dc,depth,tol)
+     end_time = time.time()
      print('(\u03B8\u2080,0)=',(t0,0))
+     print("Execution time to compute first point:", end_time - start_time, "seconds")
      p0=binary_search_p(np.pi/2,0.5,no_samples,dv,dc,depth,tol)
      print('(\u03C0/2,p\u2080)=',(np.pi/2,p0))
      p_min=p0/(no_points-1)
