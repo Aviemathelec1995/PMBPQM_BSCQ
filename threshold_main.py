@@ -40,7 +40,7 @@ def plot2(t,p):
   # pl.legend(fontsize=10)
   pl.savefig("ldpc_bscq_threshold_plot.png",bbox_inches='tight')
   pl.show()
-  
+
 def main():
   print(f'Thresholds for ({int(dv)},{int(dc)}) regular LDPC codes over BSCQ channels')
   print(f'Number of samples={no_samples}')
@@ -58,7 +58,9 @@ def main():
     print(f"Generating \u03C0/2-\u03B8 vs p plot for ({int(dv)},{int(dc)}) regular LDPC code")
     plot2(t,p)
   else:
-    print("Invalid choice. Please run the program again and select 1 or 2.")
+    print("Prinitng p and \u03B8 values. Please select 1 or 2 to generate plots.")
+    print('p values:',p)
+    print('\u03B8 values',t)
 
 if __name__== "__main__":
   parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
