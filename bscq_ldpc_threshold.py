@@ -4,7 +4,7 @@ from scipy.linalg import sqrtm
 from numpy.linalg import matrix_rank
 import copy
 import numba
-from numba import int64, float64, jit, njit, vectorize, boolean
+from numba import int64, float64, jit, njit, vectorize
 import matplotlib.pyplot as pl
 from tqdm import tqdm
 import argparse as ap
@@ -394,7 +394,6 @@ def checknode_vec_jit(d1:float64[:],d2:float64[:],g1:float64[:],g2:float64[:],pr
 #       for i in range(k-2):
 #         d1,g1=bitnode_vec_jit(d,d1,g,g1,pr_vec,perm)
 #     return d1,g1
-  
 @njit
 def bitnode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
     '''
@@ -429,6 +428,7 @@ def bitnode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->
         k //= 2
     
     return d_result, g_result
+
 # @njit
 # def checknode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
 #   '''
@@ -459,8 +459,6 @@ def bitnode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->
 #       for i in range(k-2):
 #         d1,g1=checknode_vec_jit(d,d1,g,g1,pr_vec,perm)
 #     return d1,g1
-
-
 @njit
 def checknode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->(float64[:],float64[:]):
     '''
@@ -495,7 +493,6 @@ def checknode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)
         k //= 2
     
     return d_result, g_result
-
 @njit
 def channel_density_jit(d:float64[:],g:float64[:],dv:int64,dc:int64,n:int64,code='LDPC')->(float64[:,:,:]):
   '''
@@ -607,12 +604,11 @@ def binary_search_p(t,p_max,no_samples,dv,dc,depth,tol=0.005,code='LDPC'):
     return (p_left + p_right) / 2
 
 def gen_threshold(no_samples,dv,dc,depth,no_points,tol,code='LDPC'):
-     
      start_time = time.time()
      t0=binary_search_t(0,0,no_samples,dv,dc,depth,tol)
      end_time = time.time()
      print('(\u03B8\u2080,0)=',(t0,0))
-     print("Execution time to compute first point:", end_time - start_time, "seconds")
+     print("Execution time:", end_time - start_time, "seconds")
      p0=binary_search_p(np.pi/2,0.5,no_samples,dv,dc,depth,tol)
      print('(\u03C0/2,p\u2080)=',(np.pi/2,p0))
      p_min=p0/(no_points-1)
@@ -639,8 +635,8 @@ def main():
 if __name__== "__main__":
   parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
   parser.add_argument('--verbose', '-v', help='Display text output', action="store_true")
-  parser.add_argument('-n', dest='no_samples', type=int, default=1000, help='Number of samples for DE')
-  parser.add_argument('-dv', dest='dv', type=int, default=3, help='Bitnode degree')
+  parser.add_argument('-n', dest='no_samples', type=float, default=1000, help='Number of samples for DE')
+  parser.add_argument('-dv', dest='dv', type=float, default=3, help='Bitnode degree')
   parser.add_argument('-dc', dest='dc', type=int, default=4, help='Checknode degree')
   parser.add_argument('-M', dest='depth', type=int, default=60, help='Depth of the tree')
   parser.add_argument('-s', dest='no_points', type=int, default=6, help='Number of points for the plot')
