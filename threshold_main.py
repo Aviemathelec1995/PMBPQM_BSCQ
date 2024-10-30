@@ -40,7 +40,7 @@ def plot2(t,p):
   # pl.legend(fontsize=10)
   pl.savefig("ldpc_bscq_threshold_plot.png",bbox_inches='tight')
   pl.show()
-
+  
 def main():
   print(f'Thresholds for ({int(dv)},{int(dc)}) regular LDPC codes over BSCQ channels')
   print(f'Number of samples={no_samples}')
