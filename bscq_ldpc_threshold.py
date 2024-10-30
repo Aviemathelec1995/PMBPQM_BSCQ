@@ -412,12 +412,18 @@ def bitnode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)->
     Returns:
         (float64[:], float64[:]): Updated delta and gamma parameters for combined channels
     '''
+    
+#    
     # Initialize the result as the identity in terms of the bitnode operation
     d_result, g_result = d.copy(), g.copy()
     
     # Base matrices (starting with initial d and g)
     d_base, g_base = d.copy(), g.copy()
+
+    # if k==1:
+    #    return d_result,g_result
     
+    k=k-1
     while k > 0:
         if k % 2 == 1:  # If k is odd, multiply the result by the current base
             d_result, g_result = bitnode_vec_jit(d_result, d_base, g_result, g_base, pr_vec, perm)
@@ -484,6 +490,8 @@ def checknode_power_jit(d:float64[:],g:float64[:],k:int64,pr_vec=None,perm=None)
     d_result, g_result = d.copy(), g.copy()
     d_base, g_base = d.copy(), g.copy()
     
+    
+    k=k-1
     while k > 0:
         if k % 2 == 1:  # If k is odd, multiply the result by the current base
             d_result, g_result = checknode_vec_jit(d_result, d_base, g_result, g_base, pr_vec, perm)
@@ -578,7 +586,7 @@ def binary_search_t(p,t_min,no_samples,dv,dc,depth,tol=0.02,code='LDPC'):
         t_mid = (t_left + t_right) / 2
         h=helstrom_channel_density(t_mid,p,no_samples,dv,dc,depth)
         #print(t_mid)
-        if min(h) > 0:
+        if min(h) > 1e-4:
             t_left = t_mid  # Adjust the search range
 
         else:
@@ -597,7 +605,7 @@ def binary_search_p(t,p_max,no_samples,dv,dc,depth,tol=0.005,code='LDPC'):
         p_mid = (p_left + p_right) / 2
         h=helstrom_channel_density(t,p_mid,no_samples,dv,dc,depth)
         #print(p_mid)
-        if min(h) > 0:
+        if min(h) > 1e-4:
             p_right = p_mid  # Adjust the search range
 
         else:
