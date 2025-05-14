@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
-from scipy.linalg import sqrtm
+from scipy.linalg import sqrtm,logm
 from numpy.linalg import matrix_rank
 import copy
 import numba
@@ -9,6 +9,9 @@ import matplotlib.pyplot as pl
 from tqdm import tqdm
 import argparse as ap
 import time
+import warnings
+
+from scipy.linalg._matfuncs_inv_ssq import LogmExactlySingularWarning 
 
 def pauli(x):
   '''
@@ -614,6 +617,87 @@ def binary_search_p(t,p_max,no_samples,dv,dc,depth,tol=0.005,code='LDPC'):
 
     return (p_left + p_right) / 2
 
+
+def von_neumann(rho):
+  '''
+  function to compute von-Neumann entropy (in bits)
+  input:
+      
+      rho: indicates applying Pauli X on the density matrix
+
+  output:
+      von-Neumann entropy
+       
+
+  '''
+  #rho_log=logm(rho,False)[0]/np.log(2)
+  #return -np.trace(rho@rho_log)
+  with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=LogmExactlySingularWarning)
+        rho_log=logm(rho,False)[0]/np.log(2)
+        return -np.trace(rho@rho_log)
+
+
+def holevo_bound(rho0,rho1):
+  '''
+   function to compute holevo bound of BSCQ channel
+   input:
+    rho1: first density matrix
+    rho2: second density matrix
+    
+   output:
+     holevo bound
+   '''
+   
+  return von_neumann(0.5*rho0+0.5*rho1)-0.5*von_neumann(rho0)-0.5*von_neumann(rho1)
+
+def binary_search_holevo_t(p,dv,dc,tol=0.005):
+    t_left, t_right = 0, np.pi/2
+    max_iter = calculate_max_iterations(t_left, t_right, tol)  # Determine max iterations
+    iteration = 0
+    rate=1-(dv/dc)
+
+    while t_right - t_left > tol and iteration < max_iter:
+        t_mid = (t_left + t_right) / 2
+        rho0=psc_theta_p(t_mid,p)
+        rho1=pauli(3)@rho0@pauli(3)
+        h=holevo_bound(rho0,rho1)
+        
+
+        #print(t_mid)
+        if  h > rate:
+            t_right = t_mid  # Adjust the search range
+
+        else:
+            t_left = t_mid
+        iteration += 1
+
+    return (t_left + t_right) / 2
+
+
+
+def binary_search_holevo_p(t,dv,dc,tol=0.005):
+    p_left, p_right = 0, 0.5
+    max_iter = calculate_max_iterations(p_left, p_right, tol)  # Determine max iterations
+    iteration = 0
+    rate=1-(dv/dc)
+
+    while p_right - p_left > tol and iteration < max_iter:
+        p_mid = (p_left + p_right) / 2
+        rho0=psc_theta_p(t,p_mid)
+        rho1=pauli(3)@rho0@pauli(3)
+        h=holevo_bound(rho0,rho1)
+        #print(p_mid)
+        if h > rate:
+            p_left= p_mid  # Adjust the search range
+
+        else:
+            p_right = p_mid
+        iteration += 1
+
+    return (p_left + p_right) / 2
+
+
 def gen_threshold(no_samples,dv,dc,depth,no_points,tol,code='LDPC'):
      
      start_time = time.time()
@@ -637,22 +721,44 @@ def gen_threshold(no_samples,dv,dc,depth,no_points,tol,code='LDPC'):
      p_val=np.concatenate([[0],p_val])
      p_val=np.concatenate([p_val,[p0]])
      t_val.append(np.pi/2)
-     return p_val,t_val
+
+     print(f'Computing Holevo Bound for {(dv,dc)} regular LDPC code')
+     th0=binary_search_holevo_t(0,dv,dc,tol)
+     print('(\u03B8\u2080,0)=',(th0,0))
+
+     ph0=binary_search_holevo_p(np.pi/2,dv,dc,tol)
+     print('(\u03C0/2,p\u2080)=',(np.pi/2,ph0))
+     p_min=ph0/(no_points-1)
+     p_max=ph0-ph0/(no_points-1)
+     p_val1=np.linspace(p_min,p_max,no_points-2)
+     t_val1=[th0]
+
+     for i in tqdm(range(len(p_val1)),desc="searching for thresholds (\u03B8\u2096,p\u2096) for Holevo Bound",bar_format=f'{GREEN}{{l_bar}}{{bar}}{{r_bar}}{RESET}'):
+       time.sleep(0.05)
+       tk=binary_search_holevo_t(p_val1[i],dv,dc,tol)
+       print(f'{tk,p_val1[i]}')
+       t_val1.append(tk)
+     p_val1=np.concatenate([[0],p_val1])
+     p_val1=np.concatenate([p_val1,[ph0]])
+     t_val1.append(np.pi/2)
+
+     return p_val,t_val,p_val1,t_val1
 
 def main():
   print(f'Thresholds for ({dv},{dc}) regular LDPC codes over BSCQ channels')
-  p,t=gen_threshold(no_samples,dv,dc,depth,no_points,tol)
+  p,t,ph,th=gen_threshold(no_samples,dv,dc,depth,no_points,tol)
   print('\u03B8 values',t)
   print('corresponding p values',p)
+  print('Holevo bound:',[ph,th])
 if __name__== "__main__":
   parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
   parser.add_argument('--verbose', '-v', help='Display text output', action="store_true")
-  parser.add_argument('-n', dest='no_samples', type=int, default=1000, help='Number of samples for DE')
+  parser.add_argument('-ns', dest='no_samples', type=int, default=1000, help='Number of samples for DE')
   parser.add_argument('-dv', dest='dv', type=int, default=3, help='Bitnode degree')
   parser.add_argument('-dc', dest='dc', type=int, default=4, help='Checknode degree')
   parser.add_argument('-M', dest='depth', type=int, default=60, help='Depth of the tree')
-  parser.add_argument('-s', dest='no_points', type=int, default=6, help='Number of points for the plot')
-  parser.add_argument('-e', dest='tol', type=int, default=0.005, help='Error tolerance for threshold values')
+  parser.add_argument('-np', dest='no_points', type=int, default=6, help='Number of points for the plot')
+  parser.add_argument('-err', dest='tol', type=float, default=0.005, help='Error tolerance for threshold values')
   # parse arguments
   args = parser.parse_args()
   locals().update(vars(args))

@@ -12,8 +12,9 @@ import argparse as ap
 from tqdm import tqdm
 
 import bscq_ldpc_threshold as bs
-def plot1(t,p):
-  pl.plot(p,t,linestyle='-',marker='>',markersize=7.5)
+def plot1(p,t,ph,th):
+  pl.plot(p,t,linestyle='-',marker='>',markersize=7.5,label='PMBPQM')
+  pl.plot(ph,th,linestyle='-',marker='D',markersize=7.5,label='Holevo Bound')
   pl.xticks(fontsize=18)
   pl.yticks(fontsize=18)
   pl.grid(which='major',linestyle='--',linewidth=1)
@@ -21,15 +22,21 @@ def plot1(t,p):
   pl.minorticks_on()
   pl.xlabel(r'$p$' ,fontsize=23)
   pl.ylabel(r'$\theta$',fontsize=23)
-  # pl.legend(fontsize=10)
+  pl.legend(fontsize=10)
   pl.savefig("ldpc_bscq_threshold_plot.png",bbox_inches='tight')
   pl.show()
 
-def plot2(t,p):
+def plot2(p,t,ph,th):
   t1=np.pi/2-np.array(t)
   t1=np.flip(t1)
   p=np.flip(np.array(p))
-  pl.plot(t1,p,linestyle='-',marker='>',markersize=7.5)
+
+  th1=np.pi/2-np.array(th)
+  th1=np.flip(th1)
+  ph=np.flip(np.array(ph))
+
+  pl.plot(t1,p,linestyle='-',marker='>',markersize=7.5,label='PMBPQM')
+  pl.plot(th1,ph,linestyle='-',marker='>',markersize=7.5,label='Holevo Bound')
   pl.xticks(fontsize=18)
   pl.yticks(fontsize=18)
   pl.grid(which='major',linestyle='--',linewidth=1)
@@ -37,7 +44,7 @@ def plot2(t,p):
   pl.minorticks_on()
   pl.xlabel(r'$\frac{\pi}{2}-\theta$' ,fontsize=23)
   pl.ylabel(r'$p$',fontsize=23)
-  # pl.legend(fontsize=10)
+  pl.legend(fontsize=10)
   pl.savefig("ldpc_bscq_threshold_plot.png",bbox_inches='tight')
   pl.show()
   
@@ -47,20 +54,22 @@ def main():
   print(f'Depth={depth}')
   print(f'Number of points for the plot={no_points}')
   print(f'Error tolerance for threshold values={tol}')
-  p,t=bs.gen_threshold(no_samples,dv,dc,depth,no_points,tol)
+  p,t,ph,th=bs.gen_threshold(no_samples,dv,dc,depth,no_points,tol)
   # print('\u03B8 values',t)
   # print('corresponding p values',p)
   choice = input("Please select an option (1: For p vs \u03B8 plot, 2: For \u03C0/2-\u03B8 vs p plot): ")
   if choice== '1':
     print(f"Generating p vs \u03B8 threshold plot for ({int(dv)},{int(dc)}) regular LDPC code ")
-    plot1(t,p)
+    plot1(p,t,ph,th)
   elif choice == '2':
     print(f"Generating \u03C0/2-\u03B8 vs p plot for ({int(dv)},{int(dc)}) regular LDPC code")
-    plot2(t,p)
+    plot2(p,t,ph,th)
   else:
     print("Prinitng p and \u03B8 values. Please select 1 or 2 to generate plots.")
     print('p values:',p)
     print('\u03B8 values',t)
+    print('Holevo Bound p values',ph)
+    print('Holevo Bound \u03B8 values',th)
 
 if __name__== "__main__":
   parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
