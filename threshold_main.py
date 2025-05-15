@@ -57,6 +57,19 @@ def main():
   p,t,ph,th=bs.gen_threshold(no_samples,dv,dc,depth,no_points,tol)
   # print('\u03B8 values',t)
   # print('corresponding p values',p)
+  prefixes = [
+    "p values:",
+    "\u03B8 values:",
+    "Holevo Bound p values:",
+    "Holevo Bound \u03B8 values:",
+  ]
+  arrays=[p,t,ph,th]
+  with open(f"{dv}_{dc}_regular_LDPC_threshold.csv", 'w') as f:
+    for text, arr in zip(prefixes, arrays):
+      arr_np = np.asarray(arr)
+      line = f"{text} {np.array2string(arr_np, separator=', ')}\n"
+      f.write(line)
+      
   choice = input("Please select an option (1: For p vs \u03B8 plot, 2: For \u03C0/2-\u03B8 vs p plot): ")
   if choice== '1':
     print(f"Generating p vs \u03B8 threshold plot for ({int(dv)},{int(dc)}) regular LDPC code ")
@@ -70,6 +83,8 @@ def main():
     print('\u03B8 values',t)
     print('Holevo Bound p values',ph)
     print('Holevo Bound \u03B8 values',th)
+
+    
 
 if __name__== "__main__":
   parser = ap.ArgumentParser('Thresholds for regular LDPC codes over BSCQ channels')
